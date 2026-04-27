@@ -1,6 +1,6 @@
 export function fixUrl(url) {
   if (!url) return url;
-  return url.replace(
+  return url.replaceAll(
     import.meta.env.GHOST_INTERNAL_URL,
     import.meta.env.GHOST_API_URL
   );

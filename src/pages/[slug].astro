@@ -66,7 +66,7 @@ const playerProps = audioUrl
         </header>
       )}
 
-      <div class="post-content gh-content gh-canvas" set:html={externalLinksNewTab(stripRefParams(entry.html))} />
+      <div class="post-content gh-content gh-canvas" set:html={externalLinksNewTab(stripRefParams(fixUrl(entry.html)))} />
 
       {type === 'post' && (
         <div class="gh-canvas">
