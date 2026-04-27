@@ -18,7 +18,7 @@ export async function getStaticPaths() {
 
 const { entry, type } = Astro.props;
 
-const audioUrl = fixUrl(entry.og_description);
+const audioUrl = fixUrl(entry.og_description ?? entry.og_title);
 const image = fixUrl(entry.feature_image);
 const date = formatDate(entry.published_at);
 const dateISO = new Date(entry.published_at).toISOString().split('T')[0];
