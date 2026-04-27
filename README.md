@@ -12,7 +12,6 @@ Ghost runs as a headless CMS on a Mac Mini at port 2369, accessible via Tailscal
 - Ghost running on the Mac Mini, reachable via Tailscale Funnel
 - `.env` file in this directory with:
   ```
-  GHOST_API_URL=https://jozsimini.tail24dc69.ts.net
   GHOST_CONTENT_API_KEY=<your content api key>
   GHOST_INTERNAL_URL=http://jozsimini.tail24dc69.ts.net:2369
   PUBLIC_SITE_URL=https://hetimeteor.hu

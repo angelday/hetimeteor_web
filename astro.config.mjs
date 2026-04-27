@@ -4,7 +4,7 @@ import { loadEnv } from 'vite';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const { GHOST_API_URL, GHOST_INTERNAL_URL, GHOST_CONTENT_API_KEY } = loadEnv(
+const { GHOST_INTERNAL_URL, GHOST_CONTENT_API_KEY } = loadEnv(
   process.env.NODE_ENV ?? '',
   process.cwd(),
   ''
@@ -31,23 +31,11 @@ function ghostAssets() {
         const { settings } = await settingsRes.json();
 
         function isGhostImage(url) {
-          return url && (
-            url.startsWith(GHOST_INTERNAL_URL) ||
-            url.startsWith(GHOST_API_URL + '/content/')
-          );
+          return url?.startsWith(GHOST_INTERNAL_URL);
         }
 
         function destPath(url) {
-          const normalized = url
-            .replace(GHOST_INTERNAL_URL, 'http://x')
-            .replace(GHOST_API_URL, 'http://x');
-          return path.join(process.cwd(), 'public', new URL(normalized).pathname);
-        }
-
-        function toFetchUrl(url) {
-          return url.startsWith(GHOST_API_URL)
-            ? url.replace(GHOST_API_URL, GHOST_INTERNAL_URL)
-            : url;
+          return path.join(process.cwd(), 'public', new URL(url).pathname);
         }
 
         function extractImgSrcs(html) {
@@ -74,9 +62,8 @@ function ghostAssets() {
           const dest = destPath(url);
           if (fs.existsSync(dest)) continue;
           fs.mkdirSync(path.dirname(dest), { recursive: true });
-          const fetchUrl = toFetchUrl(url);
-          const res = await fetch(fetchUrl);
-          if (!res.ok) { console.warn(`  SKIP ${fetchUrl} (${res.status})`); continue; }
+          const res = await fetch(url);
+          if (!res.ok) { console.warn(`  SKIP ${url} (${res.status})`); continue; }
           fs.writeFileSync(dest, Buffer.from(await res.arrayBuffer()));
           console.log(`  ↓ ${path.relative(process.cwd(), dest)}`);
           downloaded++;
