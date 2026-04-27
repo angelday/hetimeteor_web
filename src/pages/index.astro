@@ -1,0 +1,24 @@
+---
+import Layout from '../layouts/Layout.astro';
+import PostCard from '../components/PostCard.astro';
+import Player from '../components/Player.astro';
+import api from '../lib/ghost.js';
+
+const posts = await api.posts.browse({
+  limit: 'all',
+  include: 'tags,authors',
+  order: 'published_at DESC',
+});
+---
+
+<Layout bodyClass="home-template">
+  <div class="gh-outer">
+    <main class="site-main gh-inner">
+      <div class="post-feed gh-feed">
+        {posts.map(post => <PostCard post={post} />)}
+      </div>
+    </main>
+  </div>
+
+  <Player slot="player" />
+</Layout>

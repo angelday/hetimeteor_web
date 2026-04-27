@@ -1,0 +1,93 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Player from '../components/Player.astro';
+import { fixUrl, formatDate } from '../lib/utils.js';
+import api from '../lib/ghost.js';
+
+export async function getStaticPaths() {
+  const [posts, pages] = await Promise.all([
+    api.posts.browse({ limit: 'all', include: 'tags,authors' }),
+    api.pages.browse({ limit: 'all', include: 'authors' }),
+  ]);
+
+  const postPaths = posts.map(post => ({ params: { slug: post.slug }, props: { entry: post, type: 'post' } }));
+  const pagePaths = pages.map(page => ({ params: { slug: page.slug }, props: { entry: page, type: 'page' } }));
+
+  return [...postPaths, ...pagePaths];
+}
+
+const { entry, type } = Astro.props;
+
+const audioUrl = fixUrl(entry.og_description);
+const image = fixUrl(entry.feature_image);
+const date = formatDate(entry.published_at);
+const dateISO = new Date(entry.published_at).toISOString().split('T')[0];
+const tags = entry.tags ?? [];
+const authors = entry.authors ?? [];
+
+const playerProps = audioUrl
+  ? { audioUrl, featureImage: image, title: entry.title, date, dateISO }
+  : null;
+---
+
+<Layout title={entry.title} bodyClass={type === 'post' ? 'post-template' : 'page-template'}>
+  <main class="site-main">
+    <article class={`post single${type === 'page' ? ' page' : ''}`}>
+
+      {type === 'post' && audioUrl ? (
+        <div class="gh-outer">
+          <Player post={playerProps} />
+        </div>
+      ) : (
+        <header class="post-header gh-canvas">
+          <div class="post-meta">
+            {date && (
+              <span class="post-meta-item post-meta-date">
+                <time datetime={dateISO}>{date}</time>
+              </span>
+            )}
+            {tags.length > 0 && (
+              <span class="post-meta-item post-meta-tags">
+                {tags.map(tag => (
+                  <a class={`post-tag post-tag-${tag.slug}`} href={`/tag/${tag.slug}/`}>{tag.name}</a>
+                ))}
+              </span>
+            )}
+          </div>
+          <h1 class="post-title">{entry.title}</h1>
+          {image && (
+            <figure class="post-image kg-width-wide u-placeholder">
+              <img src={image} alt={entry.feature_image_alt || entry.title}>
+            </figure>
+          )}
+        </header>
+      )}
+
+      <div class="post-content gh-content gh-canvas" set:html={entry.html} />
+
+      {type === 'post' && authors.length > 0 && (
+        <div class="gh-canvas">
+          <div class="author-list">
+            <h3 class="author-list-title">{audioUrl ? 'Hosted by:' : 'Written by:'}</h3>
+            {authors.map(author => (
+              <section class="author">
+                <div class="author-image-placeholder u-placeholder">
+                  {author.profile_image && (
+                    <img class="author-image u-object-fit" src={fixUrl(author.profile_image)} alt={author.name} loading="lazy">
+                  )}
+                </div>
+                <div class="author-wrapper">
+                  <header class="author-header">
+                    <h4 class="author-name"><a href={`/author/${author.slug}/`}>{author.name}</a></h4>
+                  </header>
+                  {author.bio && <div class="author-bio">{author.bio}</div>}
+                </div>
+              </section>
+            ))}
+          </div>
+        </div>
+      )}
+
+    </article>
+  </main>
+</Layout>
