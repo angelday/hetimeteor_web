@@ -30,7 +30,7 @@ const playerProps = audioUrl
   : null;
 ---
 
-<Layout title={entry.title} bodyClass={type === 'post' ? 'post-template' : 'page-template'}>
+<Layout title={entry.title} bodyClass={type === 'post' ? 'post-template' : 'page-template'} canonicalPath={`/${entry.slug}/`}>
   <main class="site-main">
     <article class={`post single${type === 'page' ? ' page' : ''}`}>
 

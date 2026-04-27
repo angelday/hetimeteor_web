@@ -1,16 +1,21 @@
 ---
 import { getSettings } from '../lib/settings.js';
 
-const { title, bodyClass = '' } = Astro.props;
+const { title, bodyClass = '', canonicalPath = '' } = Astro.props;
 
 const s = await getSettings();
 const SITE_TITLE = s.title;
 const SITE_DESC  = s.description;
 const nav        = s.navigation;
 
+const SITE_URL   = import.meta.env.PUBLIC_SITE_URL;
+const pageTitle  = title ? `${title} – ${SITE_TITLE}` : SITE_TITLE;
+const canonical  = `${SITE_URL}${canonicalPath}`;
+
 const APPLE  = 'https://podcasts.apple.com/hu/podcast/heti-meteor/id451725699';
 const SPOTIFY = 'https://open.spotify.com/show/0oSjJ1pOWRCG5eVUKIx9Bg';
 const RSS    = 'https://cdn.hetimeteor.hu/feed/heti_meteor.xml';
+const bust   = Date.now();
 ---
 
 <!DOCTYPE html>
@@ -18,12 +23,27 @@ const RSS    = 'https://cdn.hetimeteor.hu/feed/heti_meteor.xml';
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{title ? `${title} – ${SITE_TITLE}` : SITE_TITLE}</title>
+  <title>{pageTitle}</title>
   <meta name="description" content={SITE_DESC}>
+  <link rel="canonical" href={canonical}>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="alternate" type="application/rss+xml" title={SITE_TITLE} href={RSS}>
+
+  <meta property="og:site_name" content={SITE_TITLE}>
+  <meta property="og:type" content="website">
+  <meta property="og:title" content={pageTitle}>
+  <meta property="og:description" content={SITE_DESC}>
+  <meta property="og:url" content={canonical}>
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content={pageTitle}>
+  <meta name="twitter:description" content={SITE_DESC}>
+  <meta name="twitter:url" content={canonical}>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400;1,700&family=Poppins:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&display=swap">
-  <link rel="stylesheet" href="/assets/built/screen.css">
+  <link rel="stylesheet" href={`/assets/built/screen.css?v=${bust}`}>
   <style set:html={`:root{--ghost-accent-color:${s.accentColor}}` +
     `.gh-head-members,.nav-sign-up{display:none!important}`}></style>
   <script type="text/javascript" is:inline>
@@ -90,6 +110,6 @@ const RSS    = 'https://cdn.hetimeteor.hu/feed/heti_meteor.xml';
   integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
   crossorigin="anonymous"
   is:inline></script>
-<script src="/assets/built/main.min.js" is:inline></script>
+<script src={`/assets/built/main.min.js?v=${bust}`} is:inline></script>
 </body>
 </html>
