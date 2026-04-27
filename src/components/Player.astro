@@ -38,7 +38,7 @@ const dateISO = post?.dateISO ?? '';
       </div>
     </header>
 
-    <div class="player-track hidden-xs hidden-sm hidden-md">
+    <div class="player-track hidden-xs hidden-sm hidden-md" style="cursor:pointer">
       <div class="player-progress"></div>
     </div>
 
@@ -52,3 +52,27 @@ const dateISO = post?.dateISO ?? '';
   </div>
 
 </div>
+
+<style>
+  :global(.player-backward),
+  :global(.player-forward),
+  :global(.player-speed) {
+    transition: color 0.15s ease;
+  }
+  :global(.player-backward:hover),
+  :global(.player-forward:hover),
+  :global(.player-speed:hover) {
+    color: var(--ghost-accent-color);
+  }
+</style>
+
+<script>
+  document.addEventListener('click', (e) => {
+    const track = (e.target as HTMLElement).closest('.player-track');
+    if (!track) return;
+    const audio = document.querySelector<HTMLAudioElement>('.player-audio');
+    if (!audio || isNaN(audio.duration)) return;
+    const rect = track.getBoundingClientRect();
+    audio.currentTime = ((e.clientX - rect.left) / rect.width) * audio.duration;
+  });
+</script>
