@@ -17,7 +17,7 @@ function ghostAssets() {
       'astro:build:start': async () => {
         console.log('Downloading Ghost-hosted images...');
 
-        const base = `${GHOST_API_URL}/ghost/api/content`;
+        const base = `${GHOST_INTERNAL_URL}/ghost/api/content`;
         const key = GHOST_CONTENT_API_KEY;
 
         const [postsRes, pagesRes, settingsRes] = await Promise.all([
@@ -45,8 +45,8 @@ function ghostAssets() {
         }
 
         function toFetchUrl(url) {
-          return url.startsWith(GHOST_INTERNAL_URL)
-            ? url.replace(GHOST_INTERNAL_URL, GHOST_API_URL)
+          return url.startsWith(GHOST_API_URL)
+            ? url.replace(GHOST_API_URL, GHOST_INTERNAL_URL)
             : url;
         }
 

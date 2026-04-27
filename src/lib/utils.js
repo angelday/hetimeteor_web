@@ -1,8 +1,6 @@
 export function fixUrl(url) {
   if (!url) return url;
-  return url
-    .replaceAll(import.meta.env.GHOST_INTERNAL_URL, '')
-    .replaceAll(import.meta.env.GHOST_API_URL, '');
+  return url.replaceAll(import.meta.env.GHOST_INTERNAL_URL, '');
 }
 
 export function externalLinksNewTab(html) {
