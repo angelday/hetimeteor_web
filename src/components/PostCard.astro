@@ -7,7 +7,7 @@ const audioUrl = fixUrl(post.og_description);
 const image = fixUrl(post.feature_image);
 const date = formatDate(post.published_at);
 const dateISO = new Date(post.published_at).toISOString().split('T')[0];
-const tags = post.tags ?? [];
+const tags = (post.tags ?? []).filter(t => !t.name.startsWith('#'));
 const excerpt = post.custom_excerpt || post.excerpt || '';
 ---
 
