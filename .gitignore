@@ -17,6 +17,9 @@ pnpm-debug.log*
 dist/
 .astro/
 
+# Downloaded Ghost images (generated at build time)
+public/content/
+
 # Environment
 .env
 .env.*
