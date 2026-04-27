@@ -56,8 +56,11 @@ const playerProps = audioUrl
           </div>
           <h1 class="post-title">{entry.title}</h1>
           {image && (
-            <figure class="post-image kg-width-wide u-placeholder">
+            <figure class="gh-article-image kg-width-wide">
               <img src={image} alt={entry.feature_image_alt || entry.title}>
+              {entry.feature_image_caption && (
+                <figcaption set:html={stripRefParams(entry.feature_image_caption)} />
+              )}
             </figure>
           )}
         </header>
