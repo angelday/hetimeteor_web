@@ -60,6 +60,15 @@ const dateISO = post?.dateISO ?? '';
     color: var(--color-primary-text);
     transition: color 0.15s ease;
   }
+  @media (max-width: 767px) {
+    :global(.player-track) {
+      height: 8px;
+      border-radius: 4px;
+    }
+    :global(.player-progress) {
+      border-radius: 4px;
+    }
+  }
   @media (hover: hover) {
     :global(.player-backward:hover),
     :global(.player-forward:hover),
@@ -70,12 +79,40 @@ const dateISO = post?.dateISO ?? '';
 </style>
 
 <script>
-  document.addEventListener('click', (e) => {
-    const track = (e.target as HTMLElement).closest('.player-track');
-    if (!track) return;
-    const audio = document.querySelector<HTMLAudioElement>('.player-audio');
-    if (!audio || isNaN(audio.duration)) return;
-    const rect = track.getBoundingClientRect();
-    audio.currentTime = ((e.clientX - rect.left) / rect.width) * audio.duration;
-  });
+  const track = document.querySelector<HTMLElement>('.player-track');
+  const audio = document.querySelector<HTMLAudioElement>('.player-audio');
+  const progress = document.querySelector<HTMLElement>('.player-progress');
+
+  if (track && audio && progress) {
+    let dragging = false;
+
+    function seek(clientX: number) {
+      if (isNaN(audio!.duration)) return;
+      const rect = track!.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      audio!.currentTime = ratio * audio!.duration;
+      progress!.style.width = (ratio * 100) + '%';
+    }
+
+    track.addEventListener('mousedown', (e) => {
+      dragging = true;
+      seek(e.clientX);
+    });
+    document.addEventListener('mousemove', (e) => {
+      if (dragging) seek(e.clientX);
+    });
+    document.addEventListener('mouseup', () => { dragging = false; });
+
+    track.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      dragging = true;
+      seek(e.touches[0].clientX);
+    }, { passive: false });
+    document.addEventListener('touchmove', (e) => {
+      if (!dragging) return;
+      e.preventDefault();
+      seek(e.touches[0].clientX);
+    }, { passive: false });
+    document.addEventListener('touchend', () => { dragging = false; });
+  }
 </script>
