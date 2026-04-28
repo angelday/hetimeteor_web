@@ -47,6 +47,8 @@ const bust   = Date.now();
   <style set:html={`:root{--ghost-accent-color:${s.accentColor}}`}></style>
   <style>
     .gh-head-members, .nav-sign-up, .gh-burger { display: none !important; }
+    .gh-head-actions .subscribe-link:hover { opacity: 1; color: var(--color-secondary-text); }
+    .gh-head-actions .subscribe-link svg { overflow: visible; }
     .site-content { padding-bottom: 0 !important; }
     .gh-foot { padding-top: 8rem !important; padding-bottom: 8rem !important; }
 
