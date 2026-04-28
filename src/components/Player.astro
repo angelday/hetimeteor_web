@@ -23,9 +23,10 @@ const dateISO = post?.dateISO ?? '';
   <div class="player-wrapper">
 
     <header class="post-header">
-      <button class="button button-play js-play">
+      <button class="button button-play js-play" type="button" aria-label="Play episode">
         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="currentColor"><path d="M10.667 6.853v18.667l14.667-9.333-14.667-9.333z"></path></svg>
         <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 32 32" fill="currentColor"><path d="M18.667 25.333h5.333v-18.667h-5.333zM8 25.333h5.333v-18.667h-5.333v18.667z"></path></svg>
+        <span class="player-spinner" aria-hidden="true"></span>
       </button>
       <div class="post-header-wrapper">
         <h1 class="post-title">{title}</h1>
@@ -60,6 +61,40 @@ const dateISO = post?.dateISO ?? '';
     color: var(--color-primary-text);
     transition: color 0.15s ease;
   }
+  :global(.button-play) {
+    position: relative;
+  }
+  :global(.button-play.is-buffering svg),
+  :global(.post-play.is-buffering svg) {
+    visibility: hidden;
+  }
+  :global(.player-spinner) {
+    display: none;
+    width: 22px;
+    height: 22px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: player-spinner-rotate 0.75s linear infinite;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin: -11px 0 0 -11px;
+  }
+  :global(.button-play.is-buffering .player-spinner),
+  :global(.post-play.is-buffering .player-spinner) {
+    display: block;
+  }
+  @keyframes player-spinner-rotate {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :global(.player-spinner) {
+      animation-duration: 1.5s;
+    }
+  }
   @media (max-width: 767px) {
     :global(.player-track) {
       height: 8px;
@@ -82,6 +117,39 @@ const dateISO = post?.dateISO ?? '';
   const track = document.querySelector<HTMLElement>('.player-track');
   const audio = document.querySelector<HTMLAudioElement>('.player-audio');
   const progress = document.querySelector<HTMLElement>('.player-progress');
+  const player = document.querySelector<HTMLElement>('.player');
+  const playerButton = document.querySelector<HTMLElement>('.player .button-play');
+  const minBufferingMs = 450;
+  let bufferingStartedAt = 0;
+  let clearBufferingTimer: number | undefined;
+  let playRequestTrigger: HTMLElement | null = null;
+
+  function removeBuffering() {
+    document.querySelectorAll<HTMLElement>('.js-play.is-buffering').forEach((button) => {
+      button.classList.remove('is-buffering');
+      button.removeAttribute('aria-busy');
+    });
+  }
+
+  function clearBuffering() {
+    window.clearTimeout(clearBufferingTimer);
+
+    const remaining = minBufferingMs - (Date.now() - bufferingStartedAt);
+    if (remaining > 0) {
+      clearBufferingTimer = window.setTimeout(removeBuffering, remaining);
+      return;
+    }
+
+    removeBuffering();
+  }
+
+  function setBuffering(trigger: HTMLElement) {
+    window.clearTimeout(clearBufferingTimer);
+    removeBuffering();
+    bufferingStartedAt = Date.now();
+    trigger.classList.add('is-buffering');
+    trigger.setAttribute('aria-busy', 'true');
+  }
 
   if (track && audio && progress) {
     let dragging = false;
@@ -131,6 +199,56 @@ const dateISO = post?.dateISO ?? '';
       if (dragging && !locked) seek(startX); // tap with no drag → seek to tap point
       dragging = false;
       locked = false;
+    });
+  }
+
+  if (audio && player) {
+    document.querySelector<HTMLElement>('.site')?.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      const trigger = target.closest<HTMLElement>('.js-play');
+      if (!trigger) return;
+
+      const post = trigger.closest<HTMLElement>('.post');
+      const isNewPost = Boolean(
+        post?.dataset.id &&
+        player.dataset.playing !== post.dataset.id
+      );
+
+      if (audio.paused || isNewPost) {
+        playRequestTrigger = trigger;
+        setBuffering(trigger);
+      } else {
+        playRequestTrigger = null;
+        clearBuffering();
+      }
+    });
+
+    audio.addEventListener('playing', () => {
+      playRequestTrigger = null;
+      clearBuffering();
+    });
+    ['pause', 'ended', 'error'].forEach((eventName) => {
+      audio.addEventListener(eventName, () => {
+        playRequestTrigger = null;
+        clearBuffering();
+      });
+    });
+
+    audio.addEventListener('waiting', () => {
+      if (playRequestTrigger?.isConnected) {
+        setBuffering(playRequestTrigger);
+        return;
+      }
+      if (!audio.paused && playerButton) setBuffering(playerButton);
+    });
+    audio.addEventListener('stalled', () => {
+      if (playRequestTrigger?.isConnected) {
+        setBuffering(playRequestTrigger);
+        return;
+      }
+      if (!audio.paused && playerButton) setBuffering(playerButton);
     });
   }
 </script>
