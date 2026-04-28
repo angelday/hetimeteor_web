@@ -103,16 +103,34 @@ const dateISO = post?.dateISO ?? '';
     });
     document.addEventListener('mouseup', () => { dragging = false; });
 
+    let startX = 0;
+    let startY = 0;
+    let locked = false;
+
     track.addEventListener('touchstart', (e) => {
-      e.preventDefault();
       dragging = true;
-      seek(e.touches[0].clientX);
-    }, { passive: false });
+      locked = false;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    }, { passive: true });
+
     document.addEventListener('touchmove', (e) => {
       if (!dragging) return;
+      const dx = Math.abs(e.touches[0].clientX - startX);
+      const dy = Math.abs(e.touches[0].clientY - startY);
+      if (!locked) {
+        if (dx < 5 && dy < 5) return;
+        if (dy > dx) { dragging = false; return; } // vertical → let scroll
+        locked = true;
+      }
       e.preventDefault();
       seek(e.touches[0].clientX);
     }, { passive: false });
-    document.addEventListener('touchend', () => { dragging = false; });
+
+    document.addEventListener('touchend', () => {
+      if (dragging && !locked) seek(startX); // tap with no drag → seek to tap point
+      dragging = false;
+      locked = false;
+    });
   }
 </script>
