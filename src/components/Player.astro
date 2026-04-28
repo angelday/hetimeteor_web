@@ -57,12 +57,15 @@ const dateISO = post?.dateISO ?? '';
   :global(.player-backward),
   :global(.player-forward),
   :global(.player-speed) {
+    color: var(--color-primary-text);
     transition: color 0.15s ease;
   }
-  :global(.player-backward:hover),
-  :global(.player-forward:hover),
-  :global(.player-speed:hover) {
-    color: var(--ghost-accent-color);
+  @media (hover: hover) {
+    :global(.player-backward:hover),
+    :global(.player-forward:hover),
+    :global(.player-speed:hover) {
+      color: var(--ghost-accent-color);
+    }
   }
 </style>
 
