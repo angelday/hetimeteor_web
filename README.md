@@ -54,6 +54,11 @@ Builds the site (including image downloads), then force-pushes the output to the
 
 The Wave theme stores episode audio URLs in Ghost's **Facebook card** fields. Most episodes use the **Facebook Description** (`og_description`) field; some older ones use **Facebook Title** (`og_title`). Both are checked — either one will show the player.
 
+## Gotchas
+
+### Astro scoped styles don't reach child components
+`<style>` in `.astro` files is scoped via `data-astro-cid-*`. Selectors only match elements within the same component. To style elements rendered by a child component (e.g. Layout.astro targeting `.post-play` from PostCard.astro), use `<style is:global>`.
+
 ## Project structure
 
 ```
