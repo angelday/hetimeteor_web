@@ -13,7 +13,7 @@ const dateISO = post?.dateISO ?? '';
   <audio class="player-audio" src={audioUrl}></audio>
 
   {image && (
-    <div class="post-media">
+    <div class="post-media js-play" style="cursor:pointer">
       <div class="u-placeholder square">
         <img class="post-image u-object-fit" src={image} alt={title}>
       </div>
