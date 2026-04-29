@@ -119,10 +119,17 @@ const dateISO = post?.dateISO ?? '';
   const progress = document.querySelector<HTMLElement>('.player-progress');
   const player = document.querySelector<HTMLElement>('.player');
   const playerButton = document.querySelector<HTMLElement>('.player .button-play');
+  const timeCurrent = document.querySelector<HTMLElement>('.player-time-current');
+  const timeDuration = document.querySelector<HTMLElement>('.player-time-duration');
+  const backwardButton = document.querySelector<HTMLButtonElement>('.player-backward');
+  const forwardButton = document.querySelector<HTMLButtonElement>('.player-forward');
+  const speedButton = document.querySelector<HTMLButtonElement>('.player-speed');
+
   const minBufferingMs = 450;
   let bufferingStartedAt = 0;
   let clearBufferingTimer: number | undefined;
   let playRequestTrigger: HTMLElement | null = null;
+  let playerSpeed = 1;
 
   function removeBuffering() {
     document.querySelectorAll<HTMLElement>('.js-play.is-buffering').forEach((button) => {
@@ -133,13 +140,11 @@ const dateISO = post?.dateISO ?? '';
 
   function clearBuffering() {
     window.clearTimeout(clearBufferingTimer);
-
     const remaining = minBufferingMs - (Date.now() - bufferingStartedAt);
     if (remaining > 0) {
       clearBufferingTimer = window.setTimeout(removeBuffering, remaining);
       return;
     }
-
     removeBuffering();
   }
 
@@ -151,6 +156,25 @@ const dateISO = post?.dateISO ?? '';
     trigger.setAttribute('aria-busy', 'true');
   }
 
+  function formatTime(seconds: number): string {
+    return new Date(seconds * 1000).toISOString().substring(11, 19);
+  }
+
+  function setPlaying(playing: boolean) {
+    const postPlay = player?.dataset.playing
+      ? document.querySelector<HTMLElement>(`.post[data-id="${player.dataset.playing}"] .post-play`)
+      : null;
+    if (playing) {
+      playerButton?.classList.add('playing');
+      postPlay?.classList.add('playing');
+      document.body.classList.add('player-opened');
+    } else {
+      playerButton?.classList.remove('playing');
+      postPlay?.classList.remove('playing');
+    }
+  }
+
+  // Seek track — mouse
   if (track && audio && progress) {
     let dragging = false;
 
@@ -162,22 +186,15 @@ const dateISO = post?.dateISO ?? '';
       progress!.style.width = (ratio * 100) + '%';
     }
 
-    track.addEventListener('mousedown', (e) => {
-      dragging = true;
-      seek(e.clientX);
-    });
-    document.addEventListener('mousemove', (e) => {
-      if (dragging) seek(e.clientX);
-    });
+    track.addEventListener('mousedown', (e) => { dragging = true; seek(e.clientX); });
+    document.addEventListener('mousemove', (e) => { if (dragging) seek(e.clientX); });
     document.addEventListener('mouseup', () => { dragging = false; });
 
-    let startX = 0;
-    let startY = 0;
-    let locked = false;
+    // Seek track — touch
+    let startX = 0, startY = 0, locked = false;
 
     track.addEventListener('touchstart', (e) => {
-      dragging = true;
-      locked = false;
+      dragging = true; locked = false;
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
     }, { passive: true });
@@ -188,7 +205,7 @@ const dateISO = post?.dateISO ?? '';
       const dy = Math.abs(e.touches[0].clientY - startY);
       if (!locked) {
         if (dx < 5 && dy < 5) return;
-        if (dy > dx) { dragging = false; return; } // vertical → let scroll
+        if (dy > dx) { dragging = false; return; }
         locked = true;
       }
       e.preventDefault();
@@ -196,13 +213,24 @@ const dateISO = post?.dateISO ?? '';
     }, { passive: false });
 
     document.addEventListener('touchend', () => {
-      if (dragging && !locked) seek(startX); // tap with no drag → seek to tap point
-      dragging = false;
-      locked = false;
+      if (dragging && !locked) seek(startX);
+      dragging = false; locked = false;
     });
   }
 
   if (audio && player) {
+    // Time display
+    audio.addEventListener('timeupdate', () => {
+      if (timeCurrent) timeCurrent.textContent = formatTime(audio!.currentTime);
+      if (progress && !isNaN(audio!.duration) && audio!.duration > 0)
+        progress.style.width = (audio!.currentTime / audio!.duration * 100) + '%';
+    });
+
+    audio.addEventListener('durationchange', () => {
+      if (timeDuration) timeDuration.textContent = formatTime(isNaN(audio!.duration) ? 0 : audio!.duration);
+    });
+
+    // Main click handler — handles both post cards and player button
     document.querySelector<HTMLElement>('.site')?.addEventListener('click', (event) => {
       const target = event.target;
       if (!(target instanceof Element)) return;
@@ -211,44 +239,90 @@ const dateISO = post?.dateISO ?? '';
       if (!trigger) return;
 
       const post = trigger.closest<HTMLElement>('.post');
-      const isNewPost = Boolean(
-        post?.dataset.id &&
-        player.dataset.playing !== post.dataset.id
-      );
+      const isNewPost = Boolean(post?.dataset.id && player.dataset.playing !== post.dataset.id);
+
+      if (isNewPost && post) {
+        // Clear playing state from the previous episode
+        const prevPostPlay = player.dataset.playing
+          ? document.querySelector<HTMLElement>(`.post[data-id="${player.dataset.playing}"] .post-play`)
+          : null;
+        prevPostPlay?.classList.remove('playing');
+
+        // Load new episode
+        audio.src = post.dataset.url ?? '';
+        player.dataset.playing = post.dataset.id ?? '';
+
+        // Sync player thumbnail, title, and date from the card
+        const postImage = post.querySelector<HTMLImageElement>('.post-image');
+        const playerImage = player.querySelector<HTMLImageElement>('.post-image');
+        if (playerImage && postImage) playerImage.src = postImage.src;
+
+        const postTitle = post.querySelector<HTMLElement>('.post-title');
+        const playerTitle = player.querySelector<HTMLElement>('.post-title');
+        if (playerTitle && postTitle) playerTitle.textContent = postTitle.textContent;
+
+        const postTime = post.querySelector<HTMLElement>('.post-meta-date time');
+        const playerTime = player.querySelector<HTMLElement>('.post-meta time');
+        if (playerTime && postTime) {
+          playerTime.setAttribute('datetime', postTime.getAttribute('datetime') ?? '');
+          playerTime.textContent = postTime.textContent;
+        }
+      }
 
       if (audio.paused || isNewPost) {
         playRequestTrigger = trigger;
         setBuffering(trigger);
+        audio.play().catch((err) => {
+          console.error(err);
+          playRequestTrigger = null;
+          clearBuffering();
+        });
       } else {
-        playRequestTrigger = null;
-        clearBuffering();
+        audio.pause();
       }
     });
 
     audio.addEventListener('playing', () => {
       playRequestTrigger = null;
       clearBuffering();
+      setPlaying(true);
     });
-    ['pause', 'ended', 'error'].forEach((eventName) => {
+
+    audio.addEventListener('pause', () => {
+      playRequestTrigger = null;
+      clearBuffering();
+      setPlaying(false);
+    });
+
+    ['ended', 'error'].forEach((eventName) => {
       audio.addEventListener(eventName, () => {
         playRequestTrigger = null;
         clearBuffering();
+        setPlaying(false);
       });
     });
 
     audio.addEventListener('waiting', () => {
-      if (playRequestTrigger?.isConnected) {
-        setBuffering(playRequestTrigger);
-        return;
-      }
+      if (playRequestTrigger?.isConnected) { setBuffering(playRequestTrigger); return; }
       if (!audio.paused && playerButton) setBuffering(playerButton);
     });
     audio.addEventListener('stalled', () => {
-      if (playRequestTrigger?.isConnected) {
-        setBuffering(playRequestTrigger);
-        return;
-      }
+      if (playRequestTrigger?.isConnected) { setBuffering(playRequestTrigger); return; }
       if (!audio.paused && playerButton) setBuffering(playerButton);
     });
   }
+
+  // Controls
+  backwardButton?.addEventListener('click', () => {
+    if (audio) audio.currentTime = Math.max(0, audio.currentTime - 10);
+  });
+  forwardButton?.addEventListener('click', () => {
+    if (audio) audio.currentTime = audio.currentTime + 30;
+  });
+  speedButton?.addEventListener('click', () => {
+    if (!audio || !speedButton) return;
+    playerSpeed = playerSpeed < 2 ? playerSpeed + 0.5 : 1;
+    audio.playbackRate = playerSpeed;
+    speedButton.textContent = playerSpeed + 'x';
+  });
 </script>
