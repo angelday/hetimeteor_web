@@ -25,7 +25,7 @@ const excerpt = post.custom_excerpt || post.excerpt || '';
       </div>
     )}
     <div class="u-placeholder square">
-      <a href={`/${post.slug}/`}>
+      <a href={`/${post.slug}/`} class={audioUrl ? 'post-media-link' : ''}>
         {image
           ? <img class="post-image lazyload u-object-fit" src={image} alt={post.feature_image_alt || post.title}>
           : <span class="letter">{post.title}</span>

@@ -230,6 +230,20 @@ const dateISO = post?.dateISO ?? '';
       if (timeDuration) timeDuration.textContent = formatTime(isNaN(audio!.duration) ? 0 : audio!.duration);
     });
 
+    // On mobile, make the whole thumbnail area trigger play
+    const isMobile = window.matchMedia('(max-width: 600px)').matches;
+    if (isMobile) {
+      document.querySelector<HTMLElement>('.site')?.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        const link = target.closest<HTMLElement>('.post-media-link');
+        if (!link) return;
+        event.preventDefault();
+        const play = link.closest<HTMLElement>('.post-media')?.querySelector<HTMLElement>('.js-play');
+        if (play) play.click();
+      });
+    }
+
     // Main click handler — handles both post cards and player button
     document.querySelector<HTMLElement>('.site')?.addEventListener('click', (event) => {
       const target = event.target;
