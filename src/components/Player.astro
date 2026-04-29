@@ -231,7 +231,7 @@ const dateISO = post?.dateISO ?? '';
     });
 
     // On mobile, make the whole thumbnail area trigger play
-    const isMobile = window.matchMedia('(max-width: 600px)').matches;
+    const isMobile = window.matchMedia('(max-width: 767px)').matches;
     if (isMobile) {
       document.querySelector<HTMLElement>('.site')?.addEventListener('click', (event) => {
         const target = event.target;
